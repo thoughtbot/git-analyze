@@ -1,0 +1,13 @@
+[package]
+name = "git-analyze"
+version = "0.1.0"
+authors = ["Josh Clayton <joshua.clayton@gmail.com>"]
+edition = "2018"
+license = "MIT"
+
+[dependencies]
+
+[profile.release]
+lto = "fat"
+codegen-units = 1
+panic = "abort"
