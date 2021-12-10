@@ -69,7 +69,7 @@ fn print_commit(commit: &CommitOccurrence) {
 
 fn print_overview(occurrences: &[CommitOccurrence]) {
     println!("Total commits: {}", occurrences.len());
-    println!("First commit: {:?}", occurrences.last().unwrap().at);
+    println!("First commit: {:?}", occurrences.first().unwrap().at);
     println!(
         "Unique committers: {:?}",
         occurrences.iter().unique_by(|c| &c.name).count()
