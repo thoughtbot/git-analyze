@@ -3,7 +3,7 @@ use crate::grouped_by_date::{GroupedByDate, Period, Quarter};
 use chrono::{DateTime, FixedOffset};
 use git2::Error;
 use git2::Repository;
-use itertools::*;
+use itertools::Itertools;
 use std::collections::BTreeMap;
 use std::collections::BTreeSet;
 
@@ -22,6 +22,8 @@ pub fn run() -> Result<(), Error> {
     let occurrences = revwalk
         .map(|commit| CommitOccurrence::build(commit.clone(), commit.author()))
         .collect::<Vec<_>>();
+
+    print_overview(&occurrences);
 
     print_authorship_timelines(&occurrences);
 
@@ -63,6 +65,49 @@ fn print_commit(commit: &CommitOccurrence) {
         commit.at.format("%Y-%m-%d %H:%M:%S %z").to_string(),
     );
     println!();
+}
+
+fn print_overview(occurrences: &[CommitOccurrence]) {
+    println!("Total commits: {}", occurrences.len());
+    println!("First commit: {:?}", occurrences.last().unwrap().at);
+    println!(
+        "Unique committers: {:?}",
+        occurrences.iter().unique_by(|c| &c.name).count()
+    );
+    println!(
+        "Recent committers: {:?}",
+        occurrences
+            .iter()
+            .filter(|c| c.at > chrono::Local::now() - chrono::Duration::weeks(26))
+            .unique_by(|c| &c.name)
+            .count()
+    );
+
+    println!("Top 10 committers:");
+    for (author, count) in contribution_counts(occurrences.to_vec())
+        .into_iter()
+        .sorted_by_key(|c| c.1 as isize * -1)
+        .take(10)
+    {
+        println!("* {} {}", author, count);
+    }
+}
+
+fn contribution_counts(mut occurrences: Vec<CommitOccurrence>) -> BTreeMap<String, usize> {
+    let authors = occurrences
+        .iter()
+        .map(|c| c.name.clone())
+        .collect::<BTreeSet<_>>();
+    let mut result = BTreeMap::default();
+
+    for author in authors {
+        result.insert(
+            author.clone(),
+            occurrences.drain_filter(|o| o.name == author).count(),
+        );
+    }
+
+    result
 }
 
 fn print_authorship_timelines(occurrences: &[CommitOccurrence]) {
