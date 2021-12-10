@@ -4,7 +4,6 @@ pub mod unix;
 
 use super::commit_occurrence::*;
 use crate::grouped_by_date::{GroupedByDate, Period, Quarter};
-use chrono::{DateTime, FixedOffset};
 pub use errors::*;
 use flags::*;
 use git2::Repository;
