@@ -3,8 +3,16 @@ use structopt::StructOpt;
 #[derive(Debug, StructOpt)]
 pub enum Command {
     Overview,
-    TeamHistory,
-    OffHours,
+    TeamHistory {
+        /// Include current author names
+        #[structopt(long, short)]
+        verbose: bool,
+    },
+    OffHours {
+        /// Include author names
+        #[structopt(long, short)]
+        verbose: bool,
+    },
 }
 
 #[derive(Debug, StructOpt)]

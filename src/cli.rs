@@ -34,11 +34,11 @@ pub fn run() -> Result<(), Error> {
             print_overview(&occurrences);
         }
 
-        Some(Command::TeamHistory) => {
-            print_periodic_team_changes(Quarter, occurrences);
+        Some(Command::TeamHistory { verbose }) => {
+            print_periodic_team_changes(Quarter, occurrences, verbose);
         }
-        Some(Command::OffHours) => {
-            print_periodic_off_hours_occurrences(Quarter, occurrences);
+        Some(Command::OffHours { verbose }) => {
+            print_periodic_off_hours_occurrences(Quarter, occurrences, verbose);
         }
     }
 
@@ -106,7 +106,11 @@ fn grouped_commit_occurrences<P: Period>(
     GroupedByDate::new(occurrences, |v| v)
 }
 
-fn print_periodic_off_hours_occurrences<P: Period>(period: P, occurrences: Vec<CommitOccurrence>) {
+fn print_periodic_off_hours_occurrences<P: Period>(
+    period: P,
+    occurrences: Vec<CommitOccurrence>,
+    verbose: bool,
+) {
     let grouped_by_period = grouped_commit_occurrences(period, occurrences);
 
     for (date, occ) in grouped_by_period {
@@ -128,13 +132,19 @@ fn print_periodic_off_hours_occurrences<P: Period>(period: P, occurrences: Vec<C
             total
         );
 
-        for author in authors {
-            println!("  * {}", author);
+        if verbose {
+            for author in authors {
+                println!("  * {}", author);
+            }
         }
     }
 }
 
-fn print_periodic_team_changes<P: Period>(period: P, occurrences: Vec<CommitOccurrence>) {
+fn print_periodic_team_changes<P: Period>(
+    period: P,
+    occurrences: Vec<CommitOccurrence>,
+    verbose: bool,
+) {
     let grouped_by_period = grouped_commit_occurrences(period, occurrences);
 
     let mut prior_authors: BTreeSet<String> = BTreeSet::new();
@@ -151,6 +161,12 @@ fn print_periodic_team_changes<P: Period>(period: P, occurrences: Vec<CommitOccu
             new_authors,
             retired_authors
         );
+
+        if verbose {
+            for author in &current_authors {
+                println!("  * {}", author);
+            }
+        }
 
         prior_authors = current_authors;
     }
