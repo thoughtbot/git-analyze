@@ -13,6 +13,7 @@ pub enum Command {
         #[structopt(long, short)]
         verbose: bool,
     },
+    GenerateMailmap,
 }
 
 #[derive(Debug, StructOpt)]

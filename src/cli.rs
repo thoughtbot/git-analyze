@@ -3,6 +3,7 @@ mod flags;
 pub mod unix;
 
 use super::commit_occurrence::*;
+use super::mailmap;
 use crate::grouped_by_date::{GroupedByDate, Period, Quarter};
 pub use errors::*;
 use flags::*;
@@ -17,6 +18,7 @@ pub fn run() -> Result<(), CliError> {
     let flags = Flags::from_args();
 
     let repo = Repository::open(".")?;
+    let mailmap = repo.mailmap()?;
     let mut revwalk = repo.revwalk()?;
 
     revwalk.set_sorting(git2::Sort::REVERSE | git2::Sort::TOPOLOGICAL)?;
@@ -28,7 +30,13 @@ pub fn run() -> Result<(), CliError> {
         .filter_map(|id| repo.find_commit(id).ok());
 
     let occurrences = revwalk
-        .map(|commit| CommitOccurrence::build(commit.clone(), commit.author()))
+        .map(|commit| {
+            CommitOccurrence::build(
+                commit.clone(),
+                commit.author(),
+                mailmap.resolve_signature(&commit.author()).ok(),
+            )
+        })
         .collect::<Vec<_>>();
 
     match flags.cmd {
@@ -42,6 +50,8 @@ pub fn run() -> Result<(), CliError> {
         Some(Command::OffHours { verbose }) => {
             print_periodic_off_hours_occurrences(Quarter, occurrences, verbose);
         }
+
+        Some(Command::GenerateMailmap) => mailmap::generate(&occurrences),
     }
 
     Ok(())

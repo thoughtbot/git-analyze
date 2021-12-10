@@ -6,6 +6,8 @@ use git2::{Commit, Oid, Signature};
 pub struct CommitOccurrence {
     pub name: String,
     pub email: String,
+    pub original_name: String,
+    pub original_email: String,
     pub id: Oid,
     pub at: DateTime<FixedOffset>,
 }
@@ -17,7 +19,7 @@ impl Dated for CommitOccurrence {
 }
 
 impl CommitOccurrence {
-    pub fn build(commit: Commit, author: Signature) -> Self {
+    pub fn build(commit: Commit, author: Signature, resolved_author: Option<Signature>) -> Self {
         let time = author.when();
         let offset = if time.offset_minutes() < 0 {
             FixedOffset::east(time.offset_minutes() * 60)
@@ -27,9 +29,17 @@ impl CommitOccurrence {
 
         let t = offset.timestamp(time.seconds(), 0);
 
+        let original_name = author.name().unwrap_or("").to_string();
+        let original_email = author.email().unwrap_or("").to_string();
+
+        let name = resolved_author.as_ref().and_then(|a| a.name());
+        let email = resolved_author.as_ref().and_then(|a| a.email());
+
         CommitOccurrence {
-            name: author.name().unwrap_or("").to_string(),
-            email: author.email().unwrap_or("").to_string(),
+            name: name.unwrap_or(&original_name).to_string(),
+            email: email.unwrap_or(&original_email).to_string(),
+            original_name,
+            original_email,
             id: commit.id(),
             at: t,
         }
