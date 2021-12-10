@@ -6,7 +6,7 @@ edition = "2018"
 license = "MIT"
 
 [dependencies]
-git2 = "0.13.25"
+git2 = { version = "0.13", features = ["vendored-openssl"] }
 structopt = "0.3"
 chrono = "0.4"
 date-calculations = "0.1"
