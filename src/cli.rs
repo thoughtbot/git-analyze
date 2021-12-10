@@ -57,6 +57,7 @@ fn commits_by_author(
         .collect::<BTreeMap<_, _>>()
 }
 
+#[allow(dead_code)]
 fn print_commit(commit: &CommitOccurrence) {
     println!("commit {}", commit.id);
     println!("Author: {} <{}>", commit.name, commit.email);
