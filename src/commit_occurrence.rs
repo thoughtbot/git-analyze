@@ -1,5 +1,5 @@
 use super::grouped_by_date::Dated;
-use chrono::{DateTime, FixedOffset, TimeZone};
+use chrono::{DateTime, Datelike, FixedOffset, TimeZone, Timelike, Weekday};
 use git2::{Commit, Oid, Signature};
 
 #[derive(Debug, Clone)]
@@ -33,5 +33,13 @@ impl CommitOccurrence {
             id: commit.id(),
             at: t,
         }
+    }
+
+    pub fn is_night(&self) -> bool {
+        self.at.hour() > 19 || self.at.hour() <= 7
+    }
+
+    pub fn is_weekend(&self) -> bool {
+        self.at.weekday() == Weekday::Sat || self.at.weekday() == Weekday::Sun
     }
 }

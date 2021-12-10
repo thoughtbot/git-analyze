@@ -25,7 +25,9 @@ pub fn run() -> Result<(), Error> {
 
     print_authorship_timelines(&occurrences);
 
-    print_periodic_team_changes(Quarter, occurrences);
+    print_periodic_team_changes(Quarter, occurrences.clone());
+
+    print_periodic_off_hours_occurrences(Quarter, occurrences.clone());
 
     Ok(())
 }
@@ -80,6 +82,34 @@ fn grouped_commit_occurrences<P: Period>(
     occurrences: Vec<CommitOccurrence>,
 ) -> GroupedByDate<Vec<CommitOccurrence>, P> {
     GroupedByDate::new(occurrences, |v| v)
+}
+
+fn print_periodic_off_hours_occurrences<P: Period>(period: P, occurrences: Vec<CommitOccurrence>) {
+    let grouped_by_period = grouped_commit_occurrences(period, occurrences);
+
+    for (date, occ) in grouped_by_period {
+        let night_or_weekend_occurrences = occ.iter().filter(|o| o.is_night() || o.is_weekend());
+        let count = night_or_weekend_occurrences.clone().count();
+
+        let total = occ.iter().len();
+        let percentage = count as f32 / total as f32;
+
+        let authors = night_or_weekend_occurrences
+            .map(|c| c.name.clone())
+            .collect::<BTreeSet<_>>();
+
+        println!(
+            "{:?}: {:.2}% ({} of {})",
+            date,
+            percentage * 100.0,
+            count,
+            total
+        );
+
+        for author in authors {
+            println!("  * {}", author);
+        }
+    }
 }
 
 fn print_periodic_team_changes<P: Period>(period: P, occurrences: Vec<CommitOccurrence>) {
