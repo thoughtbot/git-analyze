@@ -1,13 +1,19 @@
 use super::commit_occurrence::*;
 use crate::grouped_by_date::{GroupedByDate, Period, Quarter};
 use chrono::{DateTime, FixedOffset};
+use flags::*;
 use git2::Error;
 use git2::Repository;
 use itertools::Itertools;
 use std::collections::BTreeMap;
 use std::collections::BTreeSet;
+use structopt::StructOpt;
+
+mod flags;
 
 pub fn run() -> Result<(), Error> {
+    let flags = Flags::from_args();
+
     let repo = Repository::open(".")?;
     let mut revwalk = repo.revwalk()?;
 
@@ -23,38 +29,20 @@ pub fn run() -> Result<(), Error> {
         .map(|commit| CommitOccurrence::build(commit.clone(), commit.author()))
         .collect::<Vec<_>>();
 
-    print_overview(&occurrences);
+    match flags.cmd {
+        None | Some(Command::Overview) => {
+            print_overview(&occurrences);
+        }
 
-    print_authorship_timelines(&occurrences);
-
-    print_periodic_team_changes(Quarter, occurrences.clone());
-
-    print_periodic_off_hours_occurrences(Quarter, occurrences.clone());
+        Some(Command::TeamHistory) => {
+            print_periodic_team_changes(Quarter, occurrences);
+        }
+        Some(Command::OffHours) => {
+            print_periodic_off_hours_occurrences(Quarter, occurrences);
+        }
+    }
 
     Ok(())
-}
-
-fn commits_by_author(
-    commits: &[CommitOccurrence],
-) -> BTreeMap<String, (DateTime<FixedOffset>, DateTime<FixedOffset>)> {
-    commits
-        .iter()
-        .sorted_by_key(|c| &c.name)
-        .group_by(|c| c.name.clone())
-        .into_iter()
-        .map(|(k, v)| {
-            let mut dates = v.map(|c| c.at).collect::<Vec<_>>();
-            dates.sort();
-
-            (
-                k,
-                (
-                    dates.first().unwrap().clone(),
-                    dates.last().unwrap().clone(),
-                ),
-            )
-        })
-        .collect::<BTreeMap<_, _>>()
 }
 
 #[allow(dead_code)]
@@ -109,18 +97,6 @@ fn contribution_counts(mut occurrences: Vec<CommitOccurrence>) -> BTreeMap<Strin
     }
 
     result
-}
-
-fn print_authorship_timelines(occurrences: &[CommitOccurrence]) {
-    for (author, (start, end)) in commits_by_author(occurrences) {
-        println!(
-            "{:?} {:?} {:?} ({})",
-            author,
-            start,
-            end,
-            (end - start).num_days(),
-        );
-    }
 }
 
 fn grouped_commit_occurrences<P: Period>(
