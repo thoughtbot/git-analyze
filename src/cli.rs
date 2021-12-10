@@ -1,17 +1,20 @@
+pub mod errors;
+mod flags;
+pub mod unix;
+
 use super::commit_occurrence::*;
 use crate::grouped_by_date::{GroupedByDate, Period, Quarter};
 use chrono::{DateTime, FixedOffset};
+pub use errors::*;
 use flags::*;
-use git2::Error;
 use git2::Repository;
 use itertools::Itertools;
 use std::collections::BTreeMap;
 use std::collections::BTreeSet;
 use structopt::StructOpt;
+pub use unix::*;
 
-mod flags;
-
-pub fn run() -> Result<(), Error> {
+pub fn run() -> Result<(), CliError> {
     let flags = Flags::from_args();
 
     let repo = Repository::open(".")?;
