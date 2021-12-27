@@ -162,15 +162,12 @@ impl<'a> Contributors<'a> {
             }
 
             // the current name already has an entry
-            if visited_names.contains_key(name) {
-                // Find the canonical name
-                if let Some(&canonical_name) = visited_names.get(name) {
-                    // Find the Contributor based on the canonical name
-                    if let Some(contributor) = results.get_mut(canonical_name) {
-                        // Track all emails and aliases on the found contributor
-                        contributor.add_emails(all_emails);
-                        contributor.add_names(name_aliases);
-                    }
+            if let Some(canonical_name) = visited_names.get(name) {
+                // Find the Contributor based on the canonical name
+                if let Some(contributor) = results.get_mut(canonical_name) {
+                    // Track all emails and aliases on the found contributor
+                    contributor.add_emails(all_emails);
+                    contributor.add_names(name_aliases);
                 }
             } else {
                 // no entry exists for this name
