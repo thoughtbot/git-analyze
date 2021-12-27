@@ -86,8 +86,8 @@ impl<'a> Contributor<'a> {
 
 #[derive(Debug)]
 struct Contributors<'a> {
-    by_name: BTreeMap<String, SetWithCanonical<&'a str>>,
-    by_email: BTreeMap<String, SetWithCanonical<&'a str>>,
+    by_name: BTreeMap<&'a str, SetWithCanonical<&'a str>>,
+    by_email: BTreeMap<&'a str, SetWithCanonical<&'a str>>,
 }
 
 impl<'a> Default for Contributors<'a> {
@@ -126,14 +126,14 @@ impl<'a> Contributors<'a> {
 
     fn insert(&mut self, name: &'a str, email: &'a str) -> &mut Self {
         self.by_name
-            .entry(name.to_string())
+            .entry(name)
             .and_modify(|existing| {
                 existing.extend([email]);
             })
             .or_insert(SetWithCanonical::new(email));
 
         self.by_email
-            .entry(email.to_string())
+            .entry(email)
             .and_modify(|existing| {
                 existing.extend([name]);
             })
@@ -168,7 +168,7 @@ impl<'a> Contributors<'a> {
                 acc
             });
             // Remove the active name from the list of aliases
-            name_aliases.remove(name.as_str());
+            name_aliases.remove(name);
 
             for name_alias in &name_aliases {
                 // Maintain the dictionary of alias -> canonical name
@@ -176,9 +176,9 @@ impl<'a> Contributors<'a> {
             }
 
             // the current name already has an entry
-            if visited_names.contains_key(name.as_str()) {
+            if visited_names.contains_key(name) {
                 // Find the canonical name
-                if let Some(&canonical_name) = visited_names.get(name.as_str()) {
+                if let Some(&canonical_name) = visited_names.get(name) {
                     // Find the Contributor based on the canonical name
                     if let Some(contributor) = results.get_mut(canonical_name) {
                         // Track all emails and aliases on the found contributor
@@ -191,7 +191,7 @@ impl<'a> Contributors<'a> {
                 results.insert(
                     name,
                     Contributor {
-                        name: SetWithCanonical::new_with_aliases(name.as_str(), name_aliases),
+                        name: SetWithCanonical::new_with_aliases(name, name_aliases),
                         email: emails.clone(),
                     },
                 );
