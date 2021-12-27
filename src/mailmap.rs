@@ -20,39 +20,37 @@ pub fn generate(occurrences: &[CommitOccurrence]) {
 }
 
 #[derive(Debug, Clone)]
-struct SetWithCanonical<V>((V, BTreeSet<V>));
+struct SetWithCanonical<V> {
+    primary: V,
+    secondary: BTreeSet<V>,
+}
 
 impl<V: Copy + std::hash::Hash + Ord> SetWithCanonical<V> {
     fn new(value: V) -> Self {
-        SetWithCanonical((value, BTreeSet::default()))
+        SetWithCanonical {
+            primary: value,
+            secondary: BTreeSet::default(),
+        }
     }
 
     fn new_with_aliases<T: IntoIterator<Item = V>>(value: V, iter: T) -> Self {
-        let mut result = SetWithCanonical((value, BTreeSet::default()));
+        let mut result = Self::new(value);
         result.extend(iter);
         result
     }
 
     fn all(&self) -> BTreeSet<V> {
-        let mut result = BTreeSet::from([self.primary()]);
-        result.extend(self.secondary());
+        let mut result = BTreeSet::from([self.primary]);
+        result.extend(&self.secondary);
         result
-    }
-
-    fn primary(&self) -> V {
-        self.0 .0
-    }
-
-    fn secondary(&self) -> &BTreeSet<V> {
-        &self.0 .1
     }
 }
 
 impl<V: Ord> Extend<V> for SetWithCanonical<V> {
     fn extend<T: IntoIterator<Item = V>>(&mut self, iter: T) {
         for v in iter {
-            if v != self.0 .0 {
-                self.0 .1.insert(v);
+            if v != self.primary {
+                self.secondary.insert(v);
             }
         }
     }
@@ -104,17 +102,13 @@ impl<'a> Contributors<'a> {
         let mut results = vec![];
 
         for contributor in self.to_contributors().values() {
-            if contributor.email.secondary().is_empty() {
-                results.push((
-                    contributor.name.primary(),
-                    contributor.email.primary(),
-                    None,
-                ));
+            if contributor.email.secondary.is_empty() {
+                results.push((contributor.name.primary, contributor.email.primary, None));
             } else {
-                for &email in contributor.email.secondary() {
+                for &email in &contributor.email.secondary {
                     results.push((
-                        contributor.name.primary(),
-                        contributor.email.primary(),
+                        contributor.name.primary,
+                        contributor.email.primary,
                         Some(email),
                     ));
                 }
@@ -300,8 +294,8 @@ mod tests {
         set.extend([1]);
         set.extend([1, 2]);
         set.extend([3]);
-        assert_eq!(set.primary(), 1);
-        assert_eq!(set.secondary(), &BTreeSet::from([2, 3]));
+        assert_eq!(set.primary, 1);
+        assert_eq!(set.secondary, BTreeSet::from([2, 3]));
         assert_eq!(set.all(), BTreeSet::from([1, 2, 3]));
     }
 }
