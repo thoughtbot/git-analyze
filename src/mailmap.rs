@@ -63,14 +63,6 @@ struct Contributor<'a> {
 }
 
 impl<'a> Contributor<'a> {
-    fn emails(&self) -> BTreeSet<&str> {
-        self.email.all()
-    }
-
-    fn names(&self) -> BTreeSet<&str> {
-        self.name.all()
-    }
-
     fn add_emails(&mut self, emails: BTreeSet<&'a str>) -> &mut Self {
         self.email.extend(emails);
         self
@@ -196,11 +188,10 @@ impl<'a> Contributors<'a> {
     }
 
     fn names_for_email(&self, email: &str) -> BTreeSet<&str> {
-        if let Some(results) = self.by_email.get(email) {
-            results.all()
-        } else {
-            BTreeSet::default()
-        }
+        self.by_email
+            .get(email)
+            .map(|results| results.all())
+            .unwrap_or_default()
     }
 }
 
@@ -214,7 +205,7 @@ mod tests {
         contributors.insert("Test", "person@example.com");
         assert_eq!(contributors.len(), 1);
         assert_eq!(
-            contributors.get("Test").unwrap().emails(),
+            contributors.get("Test").unwrap().email.all(),
             BTreeSet::from(["person@example.com"])
         );
     }
@@ -226,7 +217,7 @@ mod tests {
         contributors.insert("Test", "person+other@example.com");
         assert_eq!(contributors.len(), 1);
         assert_eq!(
-            contributors.get("Test").unwrap().emails(),
+            contributors.get("Test").unwrap().email.all(),
             BTreeSet::from(["person@example.com", "person+other@example.com"])
         );
     }
@@ -238,7 +229,7 @@ mod tests {
         contributors.insert("Jane A Doe", "jane@example.com");
         assert_eq!(contributors.len(), 1);
         assert_eq!(
-            contributors.get("Jane A Doe").unwrap().names(),
+            contributors.get("Jane A Doe").unwrap().name.all(),
             BTreeSet::from(["Jane A Doe", "Jane Doe"])
         );
     }
@@ -252,11 +243,11 @@ mod tests {
         contributors.insert("JAD", "jane@other-example.com");
         assert_eq!(contributors.len(), 1);
         assert_eq!(
-            contributors.get("JAD").unwrap().emails(),
+            contributors.get("JAD").unwrap().email.all(),
             BTreeSet::from(["jane@example.com", "jane@other-example.com"])
         );
         assert_eq!(
-            contributors.get("JAD").unwrap().names(),
+            contributors.get("JAD").unwrap().name.all(),
             BTreeSet::from(["Jane Doe", "Jane A Doe", "JAD"])
         );
     }
