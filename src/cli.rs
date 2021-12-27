@@ -75,11 +75,12 @@ fn print_overview(occurrences: &[CommitOccurrence]) {
         "Unique committers: {:?}",
         occurrences.iter().unique_by(|c| &c.name).count()
     );
+    let six_months_ago = chrono::Local::now() - chrono::Duration::weeks(26);
     println!(
         "Recent committers: {:?}",
         occurrences
             .iter()
-            .filter(|c| c.at > chrono::Local::now() - chrono::Duration::weeks(26))
+            .filter(|c| c.at > six_months_ago)
             .unique_by(|c| &c.name)
             .count()
     );
