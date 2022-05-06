@@ -18,6 +18,8 @@ pub enum Command {
     },
     /// Print a mailmap file to STDOUT based on repository contributors
     GenerateMailmap,
+    /// Print the number of times each file has been modified
+    Churn,
 }
 
 #[derive(Debug, StructOpt)]

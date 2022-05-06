@@ -35,8 +35,8 @@ pub fn run() -> Result<(), CliError> {
                 verbose,
             );
         }
-
         Some(Command::GenerateMailmap) => mailmap::generate(&build_occurrences(&mailmap, &commits)),
+        Some(Command::Churn) => print_churn(&repo, &commits),
     }
 
     Ok(())
@@ -182,5 +182,11 @@ fn print_periodic_team_changes<P: Period>(
         }
 
         prior_authors = current_authors;
+    }
+}
+
+fn print_churn<'a>(repo: &'a Repository, commits: &'a [Commit]) {
+    for (path, change_count) in git::build_churn(repo, commits) {
+        println!("{:>5} {}", change_count, path.to_string_lossy());
     }
 }
