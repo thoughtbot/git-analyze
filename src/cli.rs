@@ -2,12 +2,11 @@ pub mod errors;
 mod flags;
 pub mod unix;
 
-use super::commit_occurrence::*;
-use super::mailmap;
+use super::{commit_occurrence::*, git, mailmap};
 use crate::grouped_by_date::{GroupedByDate, Period, Quarter};
 pub use errors::*;
 use flags::*;
-use git2::Repository;
+use git2::{Commit, Mailmap, Repository};
 use itertools::Itertools;
 use std::collections::BTreeMap;
 use std::collections::BTreeSet;
@@ -19,42 +18,43 @@ pub fn run() -> Result<(), CliError> {
 
     let repo = Repository::open(".")?;
     let mailmap = repo.mailmap()?;
-    let mut revwalk = repo.revwalk()?;
-
-    revwalk.set_sorting(git2::Sort::REVERSE | git2::Sort::TOPOLOGICAL)?;
-
-    revwalk.push_head()?;
-
-    let revwalk = revwalk
-        .filter_map(Result::ok)
-        .filter_map(|id| repo.find_commit(id).ok());
-
-    let occurrences = revwalk
-        .map(|commit| {
-            CommitOccurrence::build(
-                commit.clone(),
-                commit.author(),
-                mailmap.resolve_signature(&commit.author()).ok(),
-            )
-        })
-        .collect::<Vec<_>>();
+    let commits = git::retrieve_commits(&repo)?;
 
     match flags.cmd {
         None | Some(Command::Overview) => {
-            print_overview(&occurrences);
+            print_overview(&build_occurrences(&mailmap, &commits));
         }
 
         Some(Command::TeamHistory { verbose }) => {
-            print_periodic_team_changes(Quarter, occurrences, verbose);
+            print_periodic_team_changes(Quarter, build_occurrences(&mailmap, &commits), verbose);
         }
         Some(Command::OffHours { verbose }) => {
-            print_periodic_off_hours_occurrences(Quarter, occurrences, verbose);
+            print_periodic_off_hours_occurrences(
+                Quarter,
+                build_occurrences(&mailmap, &commits),
+                verbose,
+            );
         }
 
-        Some(Command::GenerateMailmap) => mailmap::generate(&occurrences),
+        Some(Command::GenerateMailmap) => mailmap::generate(&build_occurrences(&mailmap, &commits)),
     }
 
     Ok(())
+}
+
+fn build_occurrences<'a>(mailmap: &'a Mailmap, commits: &'a [Commit]) -> Vec<CommitOccurrence> {
+    commits
+        .iter()
+        .map(|commit| build_occurrence(mailmap, commit))
+        .collect()
+}
+
+fn build_occurrence(mailmap: &Mailmap, commit: &Commit) -> CommitOccurrence {
+    CommitOccurrence::build(
+        commit.clone(),
+        commit.author(),
+        mailmap.resolve_signature(&commit.author()).ok(),
+    )
 }
 
 #[allow(dead_code)]
