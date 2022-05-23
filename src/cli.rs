@@ -13,7 +13,7 @@ use std::collections::BTreeSet;
 use structopt::StructOpt;
 pub use unix::*;
 
-pub fn run() -> Result<(), CliError> {
+pub async fn run() -> Result<(), CliError> {
     let flags = Flags::from_args();
 
     let repo = Repository::open(".")?;
@@ -36,7 +36,7 @@ pub fn run() -> Result<(), CliError> {
             );
         }
         Some(Command::GenerateMailmap) => mailmap::generate(&build_occurrences(&mailmap, &commits)),
-        Some(Command::Churn) => print_churn(&repo, &commits),
+        Some(Command::Churn) => print_churn(&repo, commits).await,
     }
 
     Ok(())
@@ -185,8 +185,8 @@ fn print_periodic_team_changes<P: Period>(
     }
 }
 
-fn print_churn<'a>(repo: &'a Repository, commits: &'a [Commit]) {
-    for (path, change_count) in git::build_churn(repo, commits) {
+async fn print_churn<'a>(repo: &'a Repository, commits: Vec<Commit<'a>>) {
+    for (path, change_count) in git::build_churn(repo, commits).await {
         println!("{:>5} {}", change_count, path.to_string_lossy());
     }
 }
