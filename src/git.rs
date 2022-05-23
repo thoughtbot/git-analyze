@@ -1,6 +1,7 @@
 use git2::{Commit, Delta, Diff, DiffDelta, Repository};
 use std::collections::BTreeMap;
 use std::path::PathBuf;
+use tokio_stream::{self as stream, StreamExt};
 
 pub fn retrieve_commits<'a>(repo: &'a Repository) -> Result<Vec<Commit<'a>>, git2::Error> {
     let mut revwalk = repo.revwalk()?;
@@ -29,9 +30,11 @@ fn delta_operation(delta: &DiffDelta) -> Option<(PathBuf, Operation)> {
     }
 }
 
-pub fn build_churn(repo: &Repository, commits: &[Commit]) -> BTreeMap<PathBuf, usize> {
-    commits
-        .iter()
+pub async fn build_churn<'a>(
+    repo: &'a Repository,
+    commits: Vec<Commit<'a>>,
+) -> BTreeMap<PathBuf, usize> {
+    stream::iter(commits)
         .filter_map(|commit| build_diff(repo, commit).ok())
         .fold(BTreeMap::new(), |mut changes, diff| {
             for delta in diff.deltas() {
@@ -48,9 +51,10 @@ pub fn build_churn(repo: &Repository, commits: &[Commit]) -> BTreeMap<PathBuf, u
 
             changes
         })
+        .await
 }
 
-fn build_diff<'a>(repo: &'a Repository, commit: &'a Commit) -> Result<Diff<'a>, git2::Error> {
+fn build_diff<'a>(repo: &'a Repository, commit: Commit<'a>) -> Result<Diff<'a>, git2::Error> {
     let parent_tree = if commit.parents().len() == 1 {
         let parent = commit.parent(0)?;
         Some(parent.tree()?)
