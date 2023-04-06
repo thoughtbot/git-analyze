@@ -1,7 +1,9 @@
 use git_analyze::cli;
+use tokio;
 
-fn main() {
-    std::process::exit(match run() {
+#[tokio::main]
+async fn main() {
+    std::process::exit(match run().await {
         Ok(_) => 0,
         Err(cli::CliError::GitError(e)) => {
             eprintln!("git-analyze Error: {}", e.message());
@@ -15,7 +17,7 @@ fn main() {
     })
 }
 
-fn run() -> Result<(), cli::CliError> {
+async fn run() -> Result<(), cli::CliError> {
     cli::reset_signal_pipe_handler()?;
-    cli::run()
+    cli::run().await
 }
