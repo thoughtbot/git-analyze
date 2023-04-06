@@ -31,6 +31,27 @@ SUBCOMMANDS:
 
 [mailmap]: https://git-scm.com/docs/gitmailmap
 
+## Example
+
+```
+~/s/rails> git analyze
+Total commits: 83602
+First commit: 2004-11-24T01:04:44+00:00
+Unique committers: 5488
+Recent committers: 252
+Top 10 committers:
+* Rafael Mendonça França 5277
+* Aaron Patterson 5207
+* David Heinemeier Hansson 4504
+* Ryuta Kamizono 3761
+* Jeremy Kemper 3520
+* José Valim 2569
+* Xavier Noria 2538
+* Rafael França 2211
+* Yves Senn 1638
+* Carlos Antonio da Silva 1531
+```
+
 ## Installation
 
 Precompiled binaries are available for [the latest release].
